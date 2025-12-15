@@ -7,7 +7,7 @@ class IncomingCallScreen extends StatelessWidget {
 
   const IncomingCallScreen({
     super.key,
-    this.callerName = "Scam Likely", // Default for testing
+    this.callerName = "Unknown Number", // Default for testing
     this.callerNumber = "+1 (555) 019-2834",
   });
 

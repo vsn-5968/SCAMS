@@ -38,6 +38,10 @@ dependencies:
   permission_handler: ^11.3.0
   path_provider: ^2.1.2
   path: ^1.9.0
+  flutter_phone_direct_caller: ^2.1.1
+  # Removed phone_state_background due to build issues
+  # phone_state_background: ^0.0.1
+  agora_rtc_engine: ^6.3.0 # Added for VoIP functionality
 
 dev_dependencies:
   flutter_test:

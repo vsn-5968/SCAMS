@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
-import 'call_screen.dart'; // We will create this next
+import 'call_screen.dart'; 
 
 class DialerScreen extends StatefulWidget {
   const DialerScreen({super.key});
@@ -26,7 +26,6 @@ class _DialerScreenState extends State<DialerScreen> {
 
   void _onCallPressed() {
     if (_dialedNumber.isNotEmpty) {
-      // Simulate a call with our app's recording feature
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -42,7 +41,7 @@ class _DialerScreenState extends State<DialerScreen> {
       children: [
         // Display Number
         Expanded(
-          flex: 2,
+          flex: 3, // Increased flex slightly to give more room for number
           child: Center(
             child: Text(
               _dialedNumber.isEmpty ? 'Dial a number' : _dialedNumber,
@@ -57,21 +56,21 @@ class _DialerScreenState extends State<DialerScreen> {
         
         // Keypad
         Expanded(
-          flex: 5,
+          flex: 8, // Keypad takes most of the space
           child: _buildKeypad(),
         ),
 
         // Action Buttons
-        Padding(
-          padding: const EdgeInsets.only(bottom: 24.0, top: 16),
+        Expanded(
+          flex: 2,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               const SizedBox(width: 48), // Placeholder for alignment
-              FloatingActionButton.large(
+              FloatingActionButton(
                 onPressed: _onCallPressed,
                 backgroundColor: Colors.green,
-                child: const Icon(Icons.call, size: 36, color: Colors.white),
+                child: const Icon(Icons.call, size: 28, color: Colors.white),
               ),
               IconButton(
                 onPressed: _onDeletePressed,
@@ -87,44 +86,45 @@ class _DialerScreenState extends State<DialerScreen> {
   }
 
   Widget _buildKeypad() {
-    final List<Map<String, String>> keys = [
-      {'number': '1', 'letters': ''}, {'number': '2', 'letters': 'ABC'}, {'number': '3', 'letters': 'DEF'},
-      {'number': '4', 'letters': 'GHI'}, {'number': '5', 'letters': 'JKL'}, {'number': '6', 'letters': 'MNO'},
-      {'number': '7', 'letters': 'PQRS'}, {'number': '8', 'letters': 'TUV'}, {'number': '9', 'letters': 'WXYZ'},
-      {'number': '*', 'letters': ''}, {'number': '0', 'letters': '+'}, {'number': '#', 'letters': ''},
+    final List<List<Map<String, String>>> rows = [
+      [{'number': '1', 'letters': ''}, {'number': '2', 'letters': 'ABC'}, {'number': '3', 'letters': 'DEF'}],
+      [{'number': '4', 'letters': 'GHI'}, {'number': '5', 'letters': 'JKL'}, {'number': '6', 'letters': 'MNO'}],
+      [{'number': '7', 'letters': 'PQRS'}, {'number': '8', 'letters': 'TUV'}, {'number': '9', 'letters': 'WXYZ'}],
+      [{'number': '*', 'letters': ''}, {'number': '0', 'letters': '+'}, {'number': '#', 'letters': ''}],
     ];
 
-    return GridView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.3,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 24,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        children: rows.map((row) {
+          return Expanded(
+            child: Row(
+              children: row.map((key) {
+                return Expanded(
+                  child: InkWell(
+                    onTap: () => _onNumberPressed(key['number']!),
+                    customBorder: const CircleBorder(),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          key['number']!,
+                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w400, color: Colors.white),
+                        ),
+                        if (key['letters']!.isNotEmpty)
+                          Text(
+                            key['letters']!,
+                            style: const TextStyle(fontSize: 10, color: Colors.white54, letterSpacing: 1.5),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
       ),
-      itemCount: keys.length,
-      itemBuilder: (context, index) {
-        return InkWell(
-          onTap: () => _onNumberPressed(keys[index]['number']!),
-          borderRadius: BorderRadius.circular(50),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                keys[index]['number']!,
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w400, color: Colors.white),
-              ),
-              if (keys[index]['letters']!.isNotEmpty)
-                Text(
-                  keys[index]['letters']!,
-                  style: const TextStyle(fontSize: 10, color: Colors.white54, letterSpacing: 1.5),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

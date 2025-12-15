@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
 import 'dart:async';
-import 'dart:convert';
-import 'result_screen.dart'; // We will create this next
+import '../services/voip_service.dart'; // Import the new service
+import 'result_screen.dart';
 
 class CallScreen extends StatefulWidget {
   final String contactName;
@@ -24,6 +23,8 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final VoIPService _voipService = VoIPService(); // VoIP instance
+  
   Timer? _callTimer;
   int _seconds = 0;
   bool _isRecording = false;
@@ -36,19 +37,33 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _startCallSimulation() async {
-    // 1. Initialize Recorder
+    // 1. Initialize Recorder & Permissions
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       if (mounted) Navigator.pop(context);
       return;
     }
+    
+    // 2. Initialize VoIP
+    try {
+      await _voipService.initialize();
+      await _voipService.joinChannel();
+    } catch (e) {
+      print("VoIP Error: $e");
+      // Continue anyway for the sake of the demo UI, but log error
+    }
+
+    // 3. Open Recorder
     await _recorder.openRecorder();
 
-    // 2. Simulate "Connecting..." delay
-    await Future.delayed(const Duration(seconds: 2));
+    // 4. Simulate connection delay
+    if (mounted) {
+      setState(() => _statusText = "Ringing...");
+    }
+    await Future.delayed(const Duration(seconds: 1));
     if (!mounted) return;
 
-    // 3. Start Call & Recording
+    // 5. Start Call & Recording
     setState(() => _statusText = "00:00");
     _startTimer();
     _startRecording();
@@ -72,6 +87,8 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _startRecording() async {
     final tempDir = await getTemporaryDirectory();
     final filePath = '${tempDir.path}/call_recording.aac';
+    
+    // We record the mixed audio (or microphone input which captures speaker output)
     await _recorder.startRecorder(toFile: filePath);
     setState(() => _isRecording = true);
   }
@@ -80,6 +97,11 @@ class _CallScreenState extends State<CallScreen> {
     _callTimer?.cancel();
     String? path;
 
+    // Stop VoIP
+    await _voipService.leaveChannel();
+    await _voipService.dispose();
+
+    // Stop Recording
     if (_isRecording) {
       path = await _recorder.stopRecorder();
     }
@@ -87,7 +109,7 @@ class _CallScreenState extends State<CallScreen> {
 
     if (mounted) {
       if (path != null) {
-        // Navigate to result screen which handles the upload
+        // Navigate to result screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -104,6 +126,8 @@ class _CallScreenState extends State<CallScreen> {
   void dispose() {
     _callTimer?.cancel();
     _recorder.closeRecorder();
+    // Ensure cleanup happens if widget is disposed unexpectedly
+    // _voipService.dispose(); // Handled in _endCall, but good practice to check
     super.dispose();
   }
 
@@ -133,6 +157,11 @@ class _CallScreenState extends State<CallScreen> {
                   _statusText,
                   style: const TextStyle(fontSize: 18, color: Colors.white70),
                 ),
+                const SizedBox(height: 10),
+                const Text(
+                  "VoIP Secured Call",
+                  style: TextStyle(color: Colors.greenAccent, fontSize: 12),
+                ),
               ],
             ),
 
@@ -141,7 +170,7 @@ class _CallScreenState extends State<CallScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildControlButton(Icons.mic_off, "Mute"),
-                _buildControlButton(Icons.keypad, "Keypad"),
+                _buildControlButton(Icons.dialpad, "Keypad"),
                 _buildControlButton(Icons.volume_up, "Speaker"),
               ],
             ),

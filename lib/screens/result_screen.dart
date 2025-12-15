@@ -84,7 +84,8 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildResultContent() {
-    bool isScam = _predictionResult?.toLowerCase().contains("scam") ?? false;
+    // Check specifically for "Potential Scam" to avoid matching "Not Scam Call"
+    bool isScam = _predictionResult?.toLowerCase().contains("potential scam") ?? false;
     bool isError = _predictionResult?.toLowerCase().contains("error") ?? false;
     Color color = isError ? Colors.orange : (isScam ? Colors.redAccent : Colors.greenAccent);
     IconData icon = isError ? Icons.error : (isScam ? Icons.warning : Icons.check_circle);
