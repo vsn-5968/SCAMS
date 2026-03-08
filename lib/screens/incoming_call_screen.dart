@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'call_screen.dart';
 
 class IncomingCallScreen extends StatelessWidget {
   final String callerName;
   final String callerNumber;
 
-  const IncomingCallScreen({
+  IncomingCallScreen({
     super.key,
-    this.callerName = "Unknown Number", // Default for testing
-    this.callerNumber = "+1 (555) 019-2834",
-  });
+    this.callerName = "Unknown Number",
+    String? callerNumber,
+  }) : callerNumber = callerNumber ?? _generateRandomIndianNumber();
+
+  static String _generateRandomIndianNumber() {
+    final random = Random();
+    String digits = "";
+    for (int i = 0; i < 10; i++) {
+      digits += random.nextInt(10).toString();
+    }
+    return "+91 $digits";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,13 +100,13 @@ class IncomingCallScreen extends StatelessWidget {
                       label: "Accept",
                       onTap: () {
                         Navigator.pop(context); // Close incoming screen
-                        // Navigate to the Active Call Screen
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            // FIX: Use the correct parameters for CallScreen
                             builder: (context) => CallScreen(
+                              channelName: "simulated_call_channel", // Use a test channel for simulated calls
                               contactName: callerName,
-                              phoneNumber: callerNumber,
                             ),
                           ),
                         );

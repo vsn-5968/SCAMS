@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// import 'package:permission_handler/permission_handler.dart'; // Not needed at top level for now
 import 'screens/dialer_screen.dart';
 import 'screens/recents_screen.dart';
 import 'screens/contacts_screen.dart';
-import 'screens/incoming_call_screen.dart'; // Import the new screen
+import 'screens/incoming_call_screen.dart';
 
 void main() {
   runApp(const ScamDetectorApp());
@@ -49,7 +48,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   
   final List<Widget> _screens = [
-    const DialerScreen(),
+    const DialerScreen(), 
     const RecentsScreen(),
     const ContactsScreen(),
   ];
@@ -62,15 +61,14 @@ class _MainScreenState extends State<MainScreen> {
         centerTitle: true,
         leading: const Icon(Icons.security, color: Color(0xFF00BFA5)),
         actions: [
-          // Simulate Incoming Call Button
           IconButton(
             icon: const Icon(Icons.add_call, color: Colors.redAccent),
-            tooltip: "Simulate Scam Call",
+            tooltip: "Simulate Incoming Call",
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const IncomingCallScreen(),
+                  builder: (context) => IncomingCallScreen(),
                 ),
               );
             },

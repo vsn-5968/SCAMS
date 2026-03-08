@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
-import 'call_screen.dart'; 
+import 'incoming_call_screen.dart';
 
 class DialerScreen extends StatefulWidget {
   const DialerScreen({super.key});
@@ -10,26 +9,33 @@ class DialerScreen extends StatefulWidget {
 }
 
 class _DialerScreenState extends State<DialerScreen> {
-  String _dialedNumber = '';
+  String _phoneNumber = "";
 
-  void _onNumberPressed(String number) {
-    if (_dialedNumber.length < 15) {
-      setState(() => _dialedNumber += number);
-    }
+  void _onKeyPress(String value) {
+    setState(() {
+      if (_phoneNumber.length < 15) {
+        _phoneNumber += value;
+      }
+    });
   }
 
-  void _onDeletePressed() {
-    if (_dialedNumber.isNotEmpty) {
-      setState(() => _dialedNumber = _dialedNumber.substring(0, _dialedNumber.length - 1));
-    }
+  void _onBackspace() {
+    setState(() {
+      if (_phoneNumber.isNotEmpty) {
+        _phoneNumber = _phoneNumber.substring(0, _phoneNumber.length - 1);
+      }
+    });
   }
 
-  void _onCallPressed() {
-    if (_dialedNumber.isNotEmpty) {
+  void _makeCall() {
+    if (_phoneNumber.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CallScreen(contactName: "Unknown", phoneNumber: _dialedNumber),
+          builder: (context) => IncomingCallScreen(
+            callerName: "Unknown Number",
+            callerNumber: _phoneNumber,
+          ),
         ),
       );
     }
@@ -39,44 +45,62 @@ class _DialerScreenState extends State<DialerScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Display Number
-        Expanded(
-          flex: 3, // Increased flex slightly to give more room for number
-          child: Center(
-            child: Text(
-              _dialedNumber.isEmpty ? 'Dial a number' : _dialedNumber,
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.w300,
-                color: _dialedNumber.isEmpty ? Colors.grey : Colors.white,
+        const SizedBox(height: 40),
+        // Display Area
+        SizedBox(
+          height: 80,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _phoneNumber,
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
+              if (_phoneNumber.isNotEmpty)
+                const Text(
+                  "Add to Contacts",
+                  style: TextStyle(color: Color(0xFF00BFA5), fontSize: 14),
+                ),
+            ],
           ),
         ),
-        
-        // Keypad
-        Expanded(
-          flex: 8, // Keypad takes most of the space
-          child: _buildKeypad(),
-        ),
-
-        // Action Buttons
-        Expanded(
-          flex: 2,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        const Spacer(),
+        // Number Pad
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Column(
             children: [
-              const SizedBox(width: 48), // Placeholder for alignment
+              _buildRow(["1", "2", "3"]),
+              const SizedBox(height: 20),
+              _buildRow(["4", "5", "6"]),
+              const SizedBox(height: 20),
+              _buildRow(["7", "8", "9"]),
+              const SizedBox(height: 20),
+              _buildRow(["*", "0", "#"]),
+            ],
+          ),
+        ),
+        const Spacer(),
+        // Action Buttons
+        Padding(
+          padding: const EdgeInsets.only(bottom: 40),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(width: 60), // Placeholder for symmetry
               FloatingActionButton(
-                onPressed: _onCallPressed,
-                backgroundColor: Colors.green,
-                child: const Icon(Icons.call, size: 28, color: Colors.white),
+                onPressed: _makeCall,
+                backgroundColor: const Color(0xFF00BFA5),
+                child: const Icon(Icons.call, size: 30),
               ),
+              const SizedBox(width: 20),
               IconButton(
-                onPressed: _onDeletePressed,
-                icon: const Icon(Icons.backspace_outlined),
-                iconSize: 32,
-                color: Colors.white70,
+                onPressed: _onBackspace,
+                icon: const Icon(Icons.backspace_outlined, color: Colors.white70),
               ),
             ],
           ),
@@ -85,45 +109,29 @@ class _DialerScreenState extends State<DialerScreen> {
     );
   }
 
-  Widget _buildKeypad() {
-    final List<List<Map<String, String>>> rows = [
-      [{'number': '1', 'letters': ''}, {'number': '2', 'letters': 'ABC'}, {'number': '3', 'letters': 'DEF'}],
-      [{'number': '4', 'letters': 'GHI'}, {'number': '5', 'letters': 'JKL'}, {'number': '6', 'letters': 'MNO'}],
-      [{'number': '7', 'letters': 'PQRS'}, {'number': '8', 'letters': 'TUV'}, {'number': '9', 'letters': 'WXYZ'}],
-      [{'number': '*', 'letters': ''}, {'number': '0', 'letters': '+'}, {'number': '#', 'letters': ''}],
-    ];
+  Widget _buildRow(List<String> values) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: values.map((val) => _buildNumberButton(val)).toList(),
+    );
+  }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        children: rows.map((row) {
-          return Expanded(
-            child: Row(
-              children: row.map((key) {
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => _onNumberPressed(key['number']!),
-                    customBorder: const CircleBorder(),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          key['number']!,
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w400, color: Colors.white),
-                        ),
-                        if (key['letters']!.isNotEmpty)
-                          Text(
-                            key['letters']!,
-                            style: const TextStyle(fontSize: 10, color: Colors.white54, letterSpacing: 1.5),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          );
-        }).toList(),
+  Widget _buildNumberButton(String val) {
+    return GestureDetector(
+      onTap: () => _onKeyPress(val),
+      child: Container(
+        height: 70,
+        width: 70,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            val,
+            style: const TextStyle(fontSize: 28, color: Colors.white),
+          ),
+        ),
       ),
     );
   }
