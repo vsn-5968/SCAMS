@@ -53,6 +53,7 @@ class _AudioScannerScreenState extends State<AudioScannerScreen> {
   bool _isRecorderInitialised = false;
   bool _isRecording = false;
   bool _isLoading = false;
+  bool? _isScamResult;
   String? _predictionResult;
   String? _transcript;
   File? _selectedFile;
@@ -67,17 +68,23 @@ class _AudioScannerScreenState extends State<AudioScannerScreen> {
   }
 
   Future<void> _initRecorder() async {
-    final status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission not granted')),
-      );
-      return;
-    }
+    try {
+      final status = await Permission.microphone.request();
+      if (status != PermissionStatus.granted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission not granted')),
+          );
+        }
+        return;
+      }
 
-    await _recorder.openRecorder();
-    _isRecorderInitialised = true;
-    setState(() {});
+      await _recorder.openRecorder();
+      _isRecorderInitialised = true;
+      if (mounted) setState(() {});
+    } catch (e) {
+      print("Recorder init error: $e");
+    }
   }
 
   @override
@@ -91,16 +98,19 @@ class _AudioScannerScreenState extends State<AudioScannerScreen> {
 
     if (_isRecording) {
       // Stop Recording
-      final path = await _recorder.stopRecorder();
+      final audioPath = await _recorder.stopRecorder();
       setState(() => _isRecording = false);
-      if (path != null) {
-        _uploadAudio(File(path));
+      if (audioPath != null) {
+        _uploadAudio(File(audioPath));
       }
     } else {
       // Start Recording
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/temp_audio.aac';
-      await _recorder.startRecorder(toFile: filePath);
+      await _recorder.startRecorder(
+        toFile: filePath,
+        codec: Codec.aacADTS,
+      );
       setState(() => _isRecording = true);
     }
   }
@@ -140,17 +150,20 @@ class _AudioScannerScreenState extends State<AudioScannerScreen> {
         String transcript = data['transcript'] ?? "No transcript available.";
 
         setState(() {
+          _isScamResult = isScam;
           _predictionResult = isScam ? "Potential Scam Call Detected" : "Audio Seems Safe.\nNot Scam Call";
           _transcript = transcript;
         });
       } else {
         setState(() {
+          _isScamResult = null;
           _predictionResult = "Error: Server returned ${response.statusCode}";
           _transcript = null;
         });
       }
     } catch (e) {
       setState(() {
+        _isScamResult = null;
         _predictionResult = "Error: Connection failed";
         _transcript = null;
       });
@@ -253,9 +266,8 @@ class _AudioScannerScreenState extends State<AudioScannerScreen> {
   }
 
   Widget _buildResultCard() {
-    bool isScam = _predictionResult!.toLowerCase().contains("scam") ||
-        _predictionResult!.toLowerCase().contains("fraud");
     bool isError = _predictionResult!.toLowerCase().contains("error");
+    bool isScam = _isScamResult == true;
     
     Color resultColor;
     IconData resultIcon;
