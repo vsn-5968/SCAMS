@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
 
 class ResultScreen extends StatefulWidget {
   final String audioPath;
@@ -16,6 +17,8 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _isLoading = true;
   String? _predictionResult;
   String? _transcript;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  
   // Use the same backend URL
   final String _backendUrl = 'https://scam-app.onrender.com/audio/upload';
 
@@ -25,12 +28,27 @@ class _ResultScreenState extends State<ResultScreen> {
     _analyzeAudio();
   }
 
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playAlert() async {
+    try {
+      // Corrected path to match pubspec.yaml (AssetSource assumes assets/ folder)
+      await _audioPlayer.play(AssetSource('audio/scam-alert.mp3'));
+    } catch (e) {
+      print("Error playing alert: $e");
+    }
+  }
+
   Future<void> _analyzeAudio() async {
     try {
       var request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
       request.files.add(await http.MultipartFile.fromPath('file', widget.audioPath));
 
-      var streamedResponse = await request.send();
+      var streamedResponse = await request.send().timeout(const Duration(seconds: 60));
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -38,11 +56,17 @@ class _ResultScreenState extends State<ResultScreen> {
         bool isScam = data['is_scam'] == true;
         String transcript = data['transcript'] ?? "No transcript available.";
 
-        setState(() {
-          _predictionResult = isScam ? "Potential Scam Call Detected" : "Audio Seems Safe.\nNot Scam Call";
-          _transcript = transcript;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _predictionResult = isScam ? "Potential Scam Call Detected" : "Audio Seems Safe.\nNot Scam Call";
+            _transcript = transcript;
+            _isLoading = false;
+          });
+
+          if (isScam) {
+            _playAlert();
+          }
+        }
       } else {
         setState(() {
           _predictionResult = "Error: Server returned ${response.statusCode}";
